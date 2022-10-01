@@ -3,12 +3,14 @@ package com.example.androidconcurrency2020
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.os.SystemClock
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.androidconcurrency2020.databinding.ActivityMainBinding
 import kotlin.concurrent.thread
 import kotlin.random.Random
-
+const val DIE_INDEX = "DIE_INDEX"
+const val NEW_DIE_VALUE = "NEW_DIE_VALUE"
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -16,10 +18,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawables: Array<Int>
     val handler = object : Handler(){
         override fun handleMessage(msg: Message) {
-            val data = msg.data
+            val bundle = msg.data
+            val dieIndex = bundle?.getInt(DIE_INDEX) ?: 0
+            val newDieValue = bundle?.getInt(NEW_DIE_VALUE) ?: 1
+            imageViews[dieIndex].setImageResource(drawables[newDieValue - 1])
 
         }
     }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,17 +51,21 @@ class MainActivity : AppCompatActivity() {
             R.drawable.die_5,
             R.drawable.die_6
         )
-        val bundle = Bundle()
         for (dieIndex in imageViews.indices) {
-            val dieNumber = getDieValue()
-            /*imageViews[dieIndex].setImageResource(drawables[dieNumber - 1])*/
-            bundle.putInt("", dieNumber)
-            Message().also {
-                it.data = bundle
-                handler.sendMessage(it)
+            thread(start = true) {
+                val bundle = Bundle()
+                bundle.putInt(DIE_INDEX, dieIndex)
+                for (i in 1..20){
+                    bundle.putInt(NEW_DIE_VALUE, getDieValue())
+                    Message().also {
+                        it.data = bundle
+                        handler.sendMessage(it)
+                    }
+                    Thread.sleep(100L)
+                }
+
             }
         }
-
     }
 
     /**
